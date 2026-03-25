@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Ujian Online - SMP KRISTEN DORKAS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .logo-glow { filter: drop-shadow(0 0 12px rgba(2, 132, 199, 0.4)); }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <div id="app">
+        <!-- Login Screen -->
+        <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
+            <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 border border-slate-100 text-center">
+                <div class="mb-6">
+                    <img src="logo.png" alt="Logo SMP KRISTEN DORKAS" class="w-20 h-20 mx-auto logo-glow object-contain" onerror="this.src='logo.png'">
+                </div>
+                <h1 class="text-2xl font-black text-slate-800 tracking-tight uppercase">EXAM SMP KRISTEN DORKAS</h1>
+                <p class="text-sky-600 text-[10px] font-bold uppercase tracking-[0.2em] mt-1 mb-8 italic">Cerdas - Beriman - Berbudi Pekerti</p>
+
+                <div class="space-y-3">
+                    <button onclick="showLoginForm('student')" class="w-full py-4 px-4 bg-sky-600 hover:bg-sky-700 text-white rounded-2xl font-bold transition-all flex items-center justify-center gap-3">
+                        <i class="fas fa-user-graduate"></i> Portal Siswa
+                    </button>
+                    <button onclick="showLoginForm('admin')" class="w-full py-4 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-bold transition-all flex items-center justify-center gap-3">
+                        <i class="fas fa-user-shield"></i> Administrator
+                    </button>
+                </div>
+                <p class="text-xs text-slate-400 mt-4">© Daniel Widiatmoko</p>
+            </div>
+        </div>
+
+        <!-- Auth Modal -->
+        <div id="auth-modal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
+            <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 animate-fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 id="modal-title" class="text-xl font-black text-slate-800">Login</h2>
+                    <button onclick="closeModals()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="space-y-4">
+                    <input type="text" id="username" class="w-full px-5 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-sky-500 outline-none" placeholder="Username / ID">
+                    <input type="password" id="password" class="w-full px-5 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-sky-500 outline-none" placeholder="Password">
+                    <div id="login-error" class="text-red-500 text-xs font-bold hidden text-center italic">ID atau Password salah!</div>
+                    <button onclick="handleLogin()" class="w-full py-4 bg-sky-600 text-white rounded-2xl font-bold hover:bg-sky-700 shadow-xl shadow-sky-200 uppercase tracking-wide">Masuk Sistem</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div id="admin-dashboard" class="hidden min-h-screen flex bg-slate-50">
+            <aside class="w-64 bg-slate-900 text-white flex flex-col hidden lg:flex">
+                <div class="p-8 flex flex-col items-center gap-3 text-center">
+                    <img src="logo.png" class="w-12 h-12 object-contain">
+                    <h2 class="text-xs font-black text-sky-400 italic">DORKAS ADMIN</h2>
+                </div>
+                <nav class="flex-1 px-4 space-y-2">
+                    <button onclick="showAdminSection('overview')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 nav-link" data-section="overview"><i class="fas fa-home"></i> Beranda</button>
+                    <button onclick="showAdminSection('questions')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 nav-link" data-section="questions"><i class="fas fa-book"></i> Soal & Rombel</button>
+                    <button onclick="showAdminSection('students')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 nav-link" data-section="students"><i class="fas fa-users"></i> Peserta Didik</button>
+                    <button onclick="showAdminSection('results')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 nav-link" data-section="results"><i class="fas fa-poll"></i> Hasil Ujian</button>
+                    <button onclick="showAdminSection('settings')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 nav-link" data-section="settings"><i class="fas fa-cog"></i> Pengaturan Akun</button>
+                </nav>
+                <div class="p-6 border-t border-slate-800">
+                    <button onclick="exportDatabase()" class="w-full py-3 bg-slate-800 rounded-xl text-xs font-bold flex items-center justify-center gap-2 mb-4 hover:bg-slate-700"><i class="fas fa-download"></i> Backup Data</button>
+                    <!-- Restore Data Menu -->
+                    <label for="restore-input" class="w-full py-3 bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer hover:bg-indigo-600 hover:text-white transition-all">
+                        <i class="fas fa-upload"></i> Restore Data
+                        <input type="file" id="restore-input" class="hidden" accept=".json" onchange="importDatabase(event)">
+                    </label>
+                    <button onclick="startHotspot()" class="w-full py-3 bg-green-600 rounded-xl text-xs font-bold flex items-center justify-center gap-2 mb-2 hover:bg-green-700"><i class="fas fa-wifi"></i> Aktifkan Hotspot</button>
+                    <p id="hotspot-status" class="text-xs text-slate-400 italic mb-4">Status: …</p>
+                    <button onclick="logout()" class="w-full py-3 bg-red-500/10 text-red-400 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-red-500 hover:text-white"><i class="fas fa-power-off"></i> Logout</button>
+                </div>
+            </aside>
+
+            <main class="flex-1 h-screen overflow-y-auto p-6 lg:p-10">
+                <!-- Overview Section -->
+                <div id="admin-overview" class="admin-section">
+                    <h2 class="text-3xl font-black text-slate-800 mb-8 tracking-tight">Statistik SMP Kristen Dorkas</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm border-l-4 border-l-sky-500"><p class="text-slate-400 text-xs font-bold uppercase mb-2">Total Mapel</p><h3 id="stat-subjects" class="text-3xl font-black">0</h3></div>
+                        <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm border-l-4 border-l-indigo-500"><p class="text-slate-400 text-xs font-bold uppercase mb-2">Total Soal</p><h3 id="stat-questions" class="text-3xl font-black">0</h3></div>
+                        <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm border-l-4 border-l-emerald-500"><p class="text-slate-400 text-xs font-bold uppercase mb-2">Rombel Aktif</p><h3 id="stat-rombel" class="text-3xl font-black">0</h3></div>
+                        <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm border-l-4 border-l-amber-500"><p class="text-slate-400 text-xs font-bold uppercase mb-2">Total Siswa</p><h3 id="stat-students" class="text-3xl font-black">0</h3></div>
+                    </div>
+                </div>
+
+                <!-- Questions Section -->
+                <div id="admin-questions" class="hidden admin-section">
+                    <div class="flex flex-col lg:flex-row justify-between gap-4 mb-8">
+                        <div><h2 class="text-2xl font-black text-slate-800">Bank Soal & Mapel</h2><p class="text-slate-400 text-sm">Kelola Mapel, Rombel, dan Pertanyaan SMP Kristen Dorkas.</p></div>
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="openConfigModal('mapel')" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold transition-all hover:bg-slate-200">Tambah Mapel</button>
+                            <button onclick="openConfigModal('rombel')" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold transition-all hover:bg-slate-200">Tambah Rombel</button>
+                            <button onclick="openImportModal()" class="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all hover:bg-emerald-700 flex items-center gap-2"><i class="fas fa-file-import"></i> Import Word</button>
+                            <button onclick="openQuestionModal()" class="px-4 py-2 bg-sky-600 text-white rounded-xl text-xs font-bold transition-all hover:bg-sky-700">+ Soal Baru</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        <div class="lg:col-span-1 space-y-4">
+                            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Filter Tampilan</h4>
+                                <div class="space-y-3">
+                                    <select id="filter-rombel" onchange="renderAdminQuestions()" class="w-full p-3 bg-slate-50 rounded-xl border-none text-xs font-bold outline-none ring-1 ring-slate-100"></select>
+                                    <select id="filter-mapel" onchange="renderAdminQuestions()" class="w-full p-3 bg-slate-50 rounded-xl border-none text-xs font-bold outline-none ring-1 ring-slate-100"></select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-3">
+                            <div class="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left text-sm">
+                                        <thead class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                            <tr><th class="px-6 py-4">Isi Soal</th><th class="px-6 py-4">Kategori</th><th class="px-6 py-4">Kunci</th><th class="px-6 py-4 text-center">Aksi</th></tr>
+                                        </thead>
+                                        <tbody id="questions-table-body" class="divide-y divide-slate-50"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Students Section -->
+                <div id="admin-students" class="hidden admin-section">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                        <div>
+                            <h2 class="text-2xl font-black text-slate-800">Database Siswa</h2>
+                            <p class="text-slate-400 text-sm">Informasi login siswa SMP Kristen Dorkas.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="openImportSiswaModal()" class="px-6 py-3 bg-emerald-600 text-white rounded-2xl font-bold text-sm shadow-lg shadow-emerald-100 transition-all hover:bg-emerald-700 flex items-center gap-2">
+                                <i class="fas fa-file-excel"></i> Import Excel
+                            </button>
+                            <button onclick="generateStudentCardsPDF()" class="px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold text-sm shadow-lg hover:bg-indigo-700">Kartu Akun</button>
+                            <button onclick="openStudentModal()" class="px-6 py-3 bg-sky-600 text-white rounded-2xl font-bold text-sm shadow-lg shadow-sky-100 transition-all hover:bg-sky-700">Daftarkan Siswa</button>
+                            <button onclick="saveDatabaseToServer()" class="px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold text-sm shadow-lg hover:bg-indigo-700">Simpan DB</button>
+                            <button onclick="loadDatabaseFromServer()" class="px-6 py-3 bg-amber-500 text-white rounded-2xl font-bold text-sm shadow-lg hover:bg-amber-600">Ambil DB</button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                <tr><th class="px-6 py-4">Nama Lengkap</th><th class="px-6 py-4">Rombel</th><th class="px-6 py-4">ID / Sandi</th><th class="px-6 py-4 text-center">Hapus</th></tr>
+                            </thead>
+                            <tbody id="students-table-body" class="divide-y divide-slate-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div id="admin-results" class="hidden admin-section">
+                    <div class="mb-8">
+                            <h2 class="text-2xl font-black text-slate-800">Laporan Hasil Ujian</h2>
+                            <p class="text-slate-400 text-sm">Monitor pencapaian nilai siswa secara real-time.</p>
+                        </div>
+                        <div class="mb-4 flex flex-wrap items-center gap-3">
+                            <label class="text-xs text-slate-500">Rombel:</label>
+                            <select id="results-filter-rombel" class="p-2 rounded-xl bg-slate-50 border border-slate-100 text-sm"></select>
+                            <label class="text-xs text-slate-500">Mata Pelajaran:</label>
+                            <select id="results-filter-mapel" class="p-2 rounded-xl bg-slate-50 border border-slate-100 text-sm"></select>
+                            <label class="text-xs text-slate-500">Dari:</label>
+                            <input type="date" id="results-date-from" class="p-2 rounded-xl bg-slate-50 border border-slate-100 text-sm">
+                            <label class="text-xs text-slate-500">Sampai:</label>
+                            <input type="date" id="results-date-to" class="p-2 rounded-xl bg-slate-50 border border-slate-100 text-sm">
+                            <button onclick="renderAdminResults()" class="px-4 py-2 bg-sky-600 text-white rounded-xl text-xs font-bold">Terapkan</button>
+                            <button onclick="clearResultsFilter()" class="px-3 py-2 bg-slate-100 rounded-xl text-xs">Reset</button>
+                            <button onclick="exportResultsToExcel()" class="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-2"><i class="fas fa-download"></i> Export Excel</button>
+                        </div>
+                        <div class="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                    <tr>
+                                        <th class="px-6 py-4">Siswa</th>
+                                        <th class="px-6 py-4">Rombel</th>
+                                        <th class="px-6 py-4">Mata Pelajaran</th>
+                                        <th class="px-6 py-4">Tanggal</th>
+                                        <th class="px-6 py-4 text-center">Skor Akhir</th>
+                                        <th class="px-6 py-4 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="results-table-body" class="divide-y divide-slate-50"></tbody>
+                            </table>
+                        </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div id="admin-settings" class="hidden admin-section">
+                    <div class="max-w-xl">
+                        <h2 class="text-2xl font-black text-slate-800 mb-2">Pengaturan Akun</h2>
+                        <p class="text-slate-400 text-sm mb-8">Kelola kredensial akses Administrator.</p>
+                        <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
+                            <div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Username Administrator</label>
+                                <input type="text" id="set-admin-id" class="w-full px-5 py-3 bg-slate-50 rounded-2xl outline-none ring-1 ring-slate-100 focus:ring-2 focus:ring-sky-500 font-bold">
+                            </div>
+                            <div class="pt-4 border-t border-slate-50">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Password Saat Ini (Konfirmasi)</label>
+                                <input type="password" id="set-admin-old-pass" class="w-full px-5 py-3 bg-slate-50 rounded-2xl outline-none ring-1 ring-slate-100 focus:ring-2 focus:ring-sky-500 mb-4" placeholder="••••••••">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Password Baru</label>
+                                <input type="password" id="set-admin-new-pass" class="w-full px-5 py-3 bg-slate-50 rounded-2xl outline-none ring-1 ring-slate-100 focus:ring-2 focus:ring-sky-500" placeholder="Biarkan kosong jika tidak ingin ganti password">
+                            </div>
+                            <button onclick="updateAdminAccount()" class="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 transition-all">SIMPAN PERUBAHAN</button>
+
+                        </div>
+                    </div>
+                </div>
+                <!-- Copyright footer for admin dashboard -->
+                <p class="text-xs text-slate-400 mt-8 text-center">© Daniel Widiatmoko</p>
+            </main>
+        </div>
+
+        <!-- Student Area -->
+        <div id="student-dashboard" class="hidden min-h-screen bg-slate-50">
+            <nav class="bg-white px-8 py-4 border-b border-slate-50 flex justify-between items-center sticky top-0 z-20">
+                <div class="flex items-center gap-4">
+                    <img src="logo.png" class="w-10 h-10 object-contain">
+                    <div>
+                        <h2 class="text-sm font-black text-sky-600">SMP KRISTEN DORKAS</h2>
+                        <p id="st-info-label" class="text-[9px] font-bold text-slate-400 uppercase tracking-widest"></p>
+                    </div>
+                </div>
+                <button onclick="logout()" class="px-4 py-2 bg-red-50 text-red-600 rounded-xl font-black text-xs hover:bg-red-600 hover:text-white transition-all">LOGOUT</button>
+            </nav>
+            <main class="p-8">
+                <div id="student-exam-list" class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                <div id="exam-screen" class="hidden max-w-2xl mx-auto bg-white rounded-3xl shadow-xl p-8 border border-slate-100">
+                    <div class="flex justify-between items-center mb-8">
+                        <div>
+                            <p id="exam-meta" class="text-[10px] font-black text-sky-500 uppercase tracking-widest"></p>
+                            <h3 class="text-xl font-bold">Soal <span id="curr-q-num">1</span></h3>
+                        </div>
+                        <div id="timer" class="px-4 py-2 bg-slate-900 text-white rounded-xl font-mono text-lg font-bold">00:00</div>
+                    </div>
+                    <p id="exam-q-text" class="text-lg mb-8 leading-relaxed text-slate-700 font-medium"></p>
+                    <img id="exam-image" class="mb-8 max-w-full h-auto hidden" alt="" />
+                    <div id="exam-options" class="space-y-3 mb-10"></div>
+                    <div class="flex gap-3">
+                        <button onclick="navQ(-1)" id="btn-prev" class="flex-1 py-4 bg-slate-50 text-slate-400 font-bold rounded-2xl hover:bg-slate-100 transition-colors">SEBELUMNYA</button>
+                        <button onclick="navQ(1)" id="btn-next" class="flex-1 py-4 bg-sky-600 text-white font-bold rounded-2xl hover:bg-sky-700 shadow-lg shadow-sky-100 transition-all">SELANJUTNYA</button>
+                        <button onclick="finishExam()" id="btn-finish" class="hidden flex-1 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all">SELESAI UJIAN</button>
+                    </div>
+                </div>
+                <div id="score-result" class="hidden text-center max-w-sm mx-auto bg-white p-10 rounded-3xl shadow-lg animate-fade-in border border-slate-100">
+                    <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner"><i class="fas fa-check"></i></div>
+                    <h2 class="text-2xl font-black mb-2">Ujian Selesai!</h2>
+                    <p class="text-slate-400 mb-6 font-medium">Nilai Anda telah masuk ke database sekolah.</p>
+                    <div class="text-6xl font-black text-sky-600 mb-8 tracking-tighter" id="final-score-val">0</div>
+                    <button onclick="location.reload()" class="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 transition-all">KEMBALI KE BERANDA</button>
+                </div>
+            </main>
+        </div>
+
+        <!-- Modals -->
+        <div id="config-modal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
+            <div class="bg-white rounded-3xl max-w-xs w-full p-8 shadow-2xl animate-fade-in">
+                <h3 id="config-title" class="text-xl font-black mb-6">Konfigurasi</h3>
+                <input type="text" id="config-input" class="w-full px-5 py-3 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-sky-500 mb-4 font-bold" placeholder="Nama entitas...">
+                <div class="flex gap-2">
+                    <button onclick="closeModals()" class="flex-1 py-3 bg-slate-100 text-slate-500 font-bold rounded-xl">BATAL</button>
+                    <button onclick="saveConfig()" class="flex-1 py-3 bg-sky-600 text-white font-bold rounded-xl hover:bg-sky-700">TAMBAH</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Siswa Excel Modal -->
+        <div id="import-siswa-modal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
+            <div class="bg-white rounded-3xl max-w-2xl w-full p-8 shadow-2xl animate-fade-in flex flex-col max-h-[90vh]">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-black">Import Data Siswa (Excel)</h3>
+                    <button onclick="closeModals()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="bg-sky-50 border border-sky-100 p-4 rounded-2xl mb-4 text-[11px] leading-tight text-sky-800">
+                    <b>Cara Import:</b><br>
+                    1. Siapkan Excel dengan 2 kolom: <b>[Nama Lengkap]</b> dan <b>[Rombel]</b>.<br>
+                    2. Salin (Copy) datanya saja atau pilih file Excel menggunakan tombol di bawah.<br>
+                    3. Tempel (Paste) di kotak berikut atau tunggu sampai file selesai diproses.<br>
+                    <i>ID akan dibuat otomatis, Password standar: 123456</i>
+                </div>
+                <input type="file" id="import-excel-file" accept=".xls,.xlsx" class="text-sm mb-4" onchange="handleExcelFile(event)">
+                <textarea id="import-siswa-area" class="flex-1 min-h-[250px] p-4 bg-slate-50 rounded-2xl outline-none text-sm mb-4 font-mono custom-scrollbar" placeholder="Contoh:&#10;Daniel VII&#10;Widiatmoko VIII"></textarea>
+                <button onclick="processImportSiswa()" class="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-all">IMPORT SEKARANG</button>
+            </div>
+        </div>
+
+        <div id="import-modal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
+            <div class="bg-white rounded-3xl max-w-2xl w-full p-8 shadow-2xl animate-fade-in flex flex-col max-h-[90vh]">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-black">Import Soal dari Word</h3>
+                    <button onclick="closeModals()" class="text-slate-400"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="bg-amber-50 border border-amber-100 p-4 rounded-2xl mb-4 text-[11px] leading-tight text-amber-800">
+                    <b>Panduan Copas:</b> 1. Apa warna bendera kita? A. Merah Putih B. Biru (dst) Kunci: A
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <select id="import-mapel" class="p-3 bg-slate-50 rounded-xl border-none text-xs font-bold"></select>
+                    <select id="import-rombel" class="p-3 bg-slate-50 rounded-xl border-none text-xs font-bold"></select>
+                </div>
+                <div class="flex flex-col gap-3">
+    <input type="file" id="import-word-file" accept=".doc,.docx" class="text-sm" onchange="handleWordFile(event)">
+    <textarea id="import-text-area" class="flex-1 min-h-[250px] p-4 bg-slate-50 rounded-2xl outline-none text-sm" placeholder="Tempel teks soal di sini..."></textarea>
+</div>
+                <button onclick="processImport()" class="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl">PROSES IMPORT</button>
+            </div>
+        </div>
+
+        <div id="question-modal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
+            <div class="bg-white rounded-3xl max-w-xl w-full p-8 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar animate-fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-black">Buat Soal Baru</h3>
+                    <button onclick="closeModals()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <select id="q-mapel" class="p-3 bg-slate-50 rounded-xl border-none text-xs font-bold"></select>
+                    <select id="q-rombel" class="p-3 bg-slate-50 rounded-xl border-none text-xs font-bold"></select>
+                </div>
+                <textarea id="q-text" class="w-full p-4 bg-slate-50 rounded-2xl mb-4 h-32 outline-none text-sm" placeholder="Pertanyaan..."></textarea>
+                <input type="file" id="q-image-file" accept="image/*" class="mb-4" onchange="previewQuestionImage(event)">
+                <img id="q-image-preview" class="max-w-full h-auto mb-4 hidden" alt="Preview">
+                <div class="space-y-2 mb-6" id="q-opts-container">
+                    <input type="text" class="q-opt w-full p-3 bg-slate-50 rounded-xl text-sm border-none" placeholder="Opsi A">
+                    <input type="text" class="q-opt w-full p-3 bg-slate-50 rounded-xl text-sm border-none" placeholder="Opsi B">
+                    <input type="text" class="q-opt w-full p-3 bg-slate-50 rounded-xl text-sm border-none" placeholder="Opsi C">
+                    <input type="text" class="q-opt w-full p-3 bg-slate-50 rounded-xl text-sm border-none" placeholder="Opsi D">
+                </div>
+                <div class="mb-8 flex gap-2">
+                    <button onclick="setActiveCorrect(0)" class="c-btn flex-1 py-3 border-2 rounded-xl font-bold" data-idx="0">A</button>
+                    <button onclick="setActiveCorrect(1)" class="c-btn flex-1 py-3 border-2 rounded-xl font-bold" data-idx="1">B</button>
+                    <button onclick="setActiveCorrect(2)" class="c-btn flex-1 py-3 border-2 rounded-xl font-bold" data-idx="2">C</button>
+                    <button onclick="setActiveCorrect(3)" class="c-btn flex-1 py-3 border-2 rounded-xl font-bold" data-idx="3">D</button>
+                </div>
+                <button onclick="saveQuestion()" class="w-full py-4 bg-sky-600 text-white font-bold rounded-2xl">SIMPAN SOAL</button>
+            </div>
+        </div>
+
+        <div id="student-modal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
+            <div class="bg-white rounded-3xl max-w-sm w-full p-8 shadow-2xl animate-fade-in">
+                <h3 class="text-xl font-black mb-6">Siswa Baru</h3>
+                <input type="text" id="st-name" class="w-full px-5 py-3 bg-slate-50 rounded-2xl mb-3 outline-none" placeholder="Nama Lengkap">
+                <select id="st-rombel" class="w-full p-3 bg-slate-50 rounded-2xl mb-6 outline-none text-sm"></select>
+                <button onclick="saveStudent()" class="w-full py-4 bg-sky-600 text-white font-bold rounded-2xl">DAFTAR</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+    <script>
+        const DB_KEY = "EXAM_DORKAS_DATABASE_OFFICIAL";
+        let db = {
+            subjects: ["Pendidikan Agama", "Bahasa Indonesia", "Matematika", "IPA", "IPS", "Bahasa Inggris"],
+            rombels: ["VII", "VIII", "IX"],
+            questions: [],
+            students: [{ id: "ADM", password: "admin321", name: "Administrator", role: "admin" }],
+            results: []
+        };
+
+        let currentSiswa = null;
+        let activeCorrect = 0;
+        let currentConfigType = "";
+        
+        // --- CORE FUNCTIONS ---
+        async function init() {
+            // Try to load from server first
+            try {
+                console.log('Loading database from server...');
+                const res = await fetch('/api/db');
+                if (res.ok) {
+                    const serverDb = await res.json();
+                    if (serverDb && typeof serverDb === 'object' && serverDb.students) {
+                        db = serverDb;
+                        console.log('Database loaded from server');
+                        updateStats();
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn('Failed to load from server:', err.message);
+                // ignore and fallback to localStorage
+            }
+
+            // Fallback: localStorage
+            try {
+                const saved = localStorage.getItem(DB_KEY);
+                if (saved) {
+                    db = JSON.parse(saved);
+                    console.log('Database loaded from localStorage');
+                } else {
+                    console.log('Using default database');
+                    save();
+                }
+            } catch (e) {
+                console.error('Error loading database:', e);
+            }
+            updateStats();
+        }
+
+        function save() {
+            // Save locally (best-effort) and attempt server save
+            try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch (e) {}
+
+            fetch('/api/db', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(db)
+            }).then(r => {
+                if (!r.ok) console.warn('Gagal menyimpan ke server:', r.statusText);
+            }).catch(err => {
+                console.warn('Error saat menyimpan ke server:', err.message || err);
+            });
+
+            updateStats();
+        }
+
+        function updateStats() {
+            const ids = ['stat-subjects', 'stat-questions', 'stat-rombel', 'stat-students'];
+            const vals = [db.subjects.length, db.questions.length, db.rombels.length, db.students.filter(x => x.role !== 'admin').length];
+            ids.forEach((id, i) => { if(document.getElementById(id)) document.getElementById(id).innerText = vals[i]; });
+        }
+
+        // --- AUTH ---
+        function showLoginForm(type) {
+            window.loginType = type;
+            document.getElementById('auth-modal').classList.replace('hidden', 'flex');
+        }
+
+        function handleLogin() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            
+            console.log('Login attempt - ID:', u, 'Role:', window.loginType);
+            console.log('Total students in db:', db.students?.length || 0);
+            console.log('Students:', db.students?.map(s => ({ id: s.id, role: s.role })));
+            
+            if (!db.students) {
+                console.error('Database students not loaded!');
+                alert('Database belum siap. Silakan refresh halaman.');
+                return;
+            }
+            
+            const user = db.students.find(x => x.id === u && x.password === p);
+            console.log('User found:', !!user, user);
+
+            if (user) {
+                if (window.loginType === 'admin' && user.role === 'admin') {
+                    currentSiswa = user;
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('admin-dashboard').classList.remove('hidden');
+                    showAdminSection('overview');
+                    closeModals();
+                    console.log('Admin login successful');
+                } else if (window.loginType === 'student' && user.role !== 'admin') {
+                    currentSiswa = user;
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('student-dashboard').classList.remove('hidden');
+                    document.getElementById('st-info-label').innerText = `${user.name} | ${user.rombel}`;
+                    renderStudentExamList();
+                    closeModals();
+                    console.log('Student login successful');
+                } else { 
+                    console.log('Role mismatch - loginType:', window.loginType, 'user.role:', user.role);
+                    showError(); 
+                }
+            } else { 
+                console.log('No matching user found');
+                showError(); 
+            }
+        }
+
+        function showError() {
+            const err = document.getElementById('login-error');
+            err.classList.remove('hidden');
+            setTimeout(() => err.classList.add('hidden'), 2000);
+        }
+
+        function logout() { location.reload(); }
+
+        // --- IMPORT SISWA (NEW FEATURE) ---
+        function openImportSiswaModal() {
+            document.getElementById('import-siswa-area').value = "";
+            document.getElementById('import-excel-file').value = null;
+            document.getElementById('import-siswa-modal').classList.replace('hidden', 'flex');
+        }
+
+        function processImportSiswa() {
+            const raw = document.getElementById('import-siswa-area').value.trim();
+            if (!raw) return alert("Tempelkan data terlebih dahulu!");
+
+            const rows = raw.split("\n");
+            let count = 0;
+            let errors = 0;
+
+            rows.forEach(row => {
+                // Mendeteksi pemisah tab (Excel default) atau spasi ganda
+                let parts = row.split("\t");
+                if (parts.length < 2) parts = row.split(/ {2,}/); // Fallback jika dipisah spasi banyak
+
+                if (parts.length >= 2) {
+                    const nama = parts[0].trim();
+                    const rombel = parts[1].trim();
+                    
+                    if (nama && rombel) {
+                        // Generate ID sederhana dari nama + random suffix jika perlu
+                        const baseId = "DRKS-" + Math.floor(1000 + Math.random() * 9000);
+                        
+                        db.students.push({
+                            id: baseId,
+                            password: "escrido",
+                            name: nama,
+                            rombel: rombel,
+                            role: "student"
+                        });
+                        count++;
+                    }
+                } else {
+                    errors++;
+                }
+            });
+
+            save();
+            renderAdminStudents();
+            closeModals();
+            alert(`Berhasil mengimport ${count} siswa. ${errors > 0 ? errors + ' baris gagal diproses.' : ''}`);
+        }
+
+        // parse Excel file to textarea for import
+        function handleExcelFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const wb = XLSX.read(data, { type: 'array' });
+                    const firstSheet = wb.Sheets[wb.SheetNames[0]];
+                    // convert to tab-delimited text, which matches processImportSiswa expectations
+                    const csv = XLSX.utils.sheet_to_csv(firstSheet, { FS: '\t' });
+                    document.getElementById('import-siswa-area').value = csv;
+                } catch (err) {
+                    alert('Gagal membaca file Excel: ' + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- STUDENT MANAGEMENT ---
+        function openStudentModal() {
+            populateSelects(['st-rombel']);
+            document.getElementById('student-modal').classList.replace('hidden', 'flex');
+        }
+
+        function saveStudent() {
+            const name = document.getElementById('st-name').value;
+            const rombel = document.getElementById('st-rombel').value;
+            if (!name) return alert("Nama harus diisi");
+            
+            const id = "DRKS-" + Math.floor(1000 + Math.random() * 9000);
+            db.students.push({ id, password: "escrido", name, rombel, role: "student" });
+            save();
+            renderAdminStudents();
+            closeModals();
+        }
+
+        function renderAdminStudents() {
+            const tbody = document.getElementById('students-table-body');
+            const list = db.students.filter(x => x.role !== 'admin');
+            tbody.innerHTML = list.map(s => `
+                <tr>
+                    <td class="px-6 py-4 font-bold">${s.name}</td>
+                    <td class="px-6 py-4 text-xs">${s.rombel}</td>
+                    <td class="px-6 py-4"><span class="bg-slate-100 px-2 py-1 rounded font-mono text-xs">${s.id} / ${s.password}</span></td>
+                    <td class="px-6 py-4 text-center"><button onclick="deleteStudent('${s.id}')" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button></td>
+                </tr>
+            `).join('');
+        }
+
+        function deleteStudent(id) {
+            if (confirm("Hapus siswa ini?")) {
+                db.students = db.students.filter(x => x.id !== id);
+                save();
+                renderAdminStudents();
+            }
+        }
+
+        function generateStudentCardsPDF() {
+            const list = db.students.filter(x => x.role !== 'admin');
+            if (list.length === 0) return alert('Tidak ada siswa untuk dicetak.');
+            const container = document.createElement('div');
+            container.style.padding = '10px';
+            list.forEach(s => {
+                const card = document.createElement('div');
+                card.style.border = '1px solid #000';
+                card.style.padding = '10px';
+                card.style.margin = '5px';
+                card.style.width = '250px';
+                card.style.display = 'inline-block';
+                card.innerHTML = `<strong>Nama:</strong> ${s.name}<br>
+                    <strong>Rombel:</strong> ${s.rombel}<br>
+                    <strong>ID:</strong> ${s.id}<br>
+                    <strong>Password:</strong> ${s.password}`;
+                container.appendChild(card);
+            });
+            html2pdf().from(container).set({margin:1, filename:'kartu_akun_siswa.pdf', html2canvas:{scale:2}}).save();
+        }
+
+        // --- UI HELPERS ---
+        function showAdminSection(sec) {
+            document.querySelectorAll('.admin-section').forEach(s => s.classList.add('hidden'));
+            document.getElementById('admin-' + sec).classList.remove('hidden');
+            document.querySelectorAll('.nav-link').forEach(l => {
+                l.classList.remove('bg-sky-600', 'text-white');
+                if (l.dataset.section === sec) l.classList.add('bg-sky-600', 'text-white');
+            });
+
+            if (sec === 'questions') { populateSelects(['filter-mapel', 'filter-rombel'], true); renderAdminQuestions(); }
+            if (sec === 'students') renderAdminStudents();
+            if (sec === 'results') { populateSelects(['results-filter-rombel','results-filter-mapel'], true); renderAdminResults(); }
+            if (sec === 'settings') {
+                const admin = db.students.find(x => x.role === 'admin');
+                document.getElementById('set-admin-id').value = admin.id;
+
+            }
+            // refresh hotspot status display whenever admin panel is shown
+            if (typeof fetchHotspotStatus === 'function') fetchHotspotStatus();
+        }
+
+        function closeModals() {
+            document.querySelectorAll('[id$="-modal"]').forEach(m => m.classList.replace('flex', 'hidden'));
+            // reset question modal fields when user cancels
+            const qText = document.getElementById('q-text');
+            if (qText) qText.value = '';
+            document.querySelectorAll('.q-opt').forEach(i => i.value = '');
+            const qMapel = document.getElementById('q-mapel');
+            const qRombel = document.getElementById('q-rombel');
+            if (qMapel) qMapel.value = '';
+            if (qRombel) qRombel.value = '';
+            const img = document.getElementById('q-image-preview');
+            if (img) { img.src = ''; img.classList.add('hidden'); }
+            activeCorrect = 0;
+        }
+
+        function populateSelects(ids, includeAll = false) {
+            ids.forEach(id => {
+                const el = document.getElementById(id); if(!el) return;
+                const list = id.includes('mapel') ? db.subjects : db.rombels;
+                let html = includeAll ? `<option value="ALL">SEMUA</option>` : '';
+                html += list.map(item => `<option value="${item}">${item}</option>`).join('');
+                el.innerHTML = html;
+            });
+        }
+
+        // --- QUESTION MANAGEMENT ---
+        function openQuestionModal() {
+            populateSelects(['q-mapel', 'q-rombel']);
+            setActiveCorrect(0);
+            document.getElementById('q-image-file').value = null;
+            document.getElementById('q-image-preview').classList.add('hidden');
+            document.getElementById('question-modal').classList.replace('hidden', 'flex');
+        }
+
+        function previewQuestionImage(event) {
+            const file = event.target.files[0];
+            const img = document.getElementById('q-image-preview');
+            if (!file) {
+                img.src = '';
+                img.classList.add('hidden');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                img.src = e.target.result;
+                img.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function setActiveCorrect(idx) {
+            activeCorrect = idx;
+            document.querySelectorAll('.c-btn').forEach((b, i) => {
+                b.className = i === idx ? 'c-btn flex-1 py-3 border-2 border-sky-600 bg-sky-50 text-sky-600 font-bold rounded-xl' : 'c-btn flex-1 py-3 border-2 border-slate-100 text-slate-400 font-bold rounded-xl';
+            });
+        }
+
+        function saveQuestion() {
+            const text = document.getElementById('q-text').value;
+            const options = Array.from(document.querySelectorAll('.q-opt')).map(i => i.value);
+            const mapel = document.getElementById('q-mapel').value;
+            const rombel = document.getElementById('q-rombel').value;
+            let imageData = null;
+            const imgEl = document.getElementById('q-image-preview');
+            if (!imgEl.classList.contains('hidden')) {
+                imageData = imgEl.src; // data URL
+            }
+
+            if (!text || options.some(o => !o)) return alert("Lengkapi semua bidang!");
+
+            db.questions.push({ text, options, mapel, rombel, correct: activeCorrect, image: imageData });
+            save();
+            renderAdminQuestions();
+            closeModals();
+        }
+
+        function renderAdminQuestions() {
+            const fR = document.getElementById('filter-rombel').value;
+            const fM = document.getElementById('filter-mapel').value;
+            const tbody = document.getElementById('questions-table-body');
+            
+            const filtered = db.questions.filter(q => (fR === 'ALL' || q.rombel === fR) && (fM === 'ALL' || q.mapel === fM));
+
+            tbody.innerHTML = filtered.map((q, i) => `
+                <tr class="hover:bg-slate-50">
+                    <td class="px-6 py-4 font-medium max-w-xs truncate">
+                        ${q.text}${q.image? '<br><i class="fas fa-image text-xs text-slate-400"></i>':''}
+                    </td>
+                    <td class="px-6 py-4"><span class="px-2 py-1 bg-slate-100 rounded text-[10px] font-bold">${q.mapel} | ${q.rombel}</span></td>
+                    <td class="px-6 py-4 font-bold text-sky-600">${['A','B','C','D'][q.correct]}</td>
+                    <td class="px-6 py-4 text-center"><button onclick="deleteQuestion(${db.questions.indexOf(q)})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button></td>
+                </tr>
+            `).join('');
+        }
+
+        function deleteQuestion(idx) {
+            if (confirm("Hapus soal?")) { db.questions.splice(idx, 1); save(); renderAdminQuestions(); }
+        }
+
+        // --- IMPORT / RESTORE / SETTINGS HELPERS ---
+        function openImportModal() {
+            populateSelects(['import-mapel', 'import-rombel']);
+            document.getElementById('import-text-area').value = '';
+            document.getElementById('import-word-file').value = null;
+            document.getElementById('import-modal').classList.replace('hidden', 'flex');
+        }
+
+        function processImport() {
+            let raw = document.getElementById('import-text-area').value.trim();
+            const mapel = document.getElementById('import-mapel').value;
+            const rombel = document.getElementById('import-rombel').value;
+            if (!raw) return alert('Tempel teks soal terlebih dahulu atau pilih file Word!');
+
+            const blocks = raw.split(/\n{2,}/).map(b => b.trim()).filter(Boolean);
+            let added = 0, failed = 0;
+
+            blocks.forEach(block => {
+                // Try to extract the answer key (Kunci: A)
+                const keyMatch = block.match(/kunci\s*[:\-]?\s*([A-D])/i);
+                const keyLetter = keyMatch ? keyMatch[1].toUpperCase() : null;
+
+                // Remove the key portion to ease parsing
+                let content = block.replace(/kunci\s*[:\-]?\s*[A-D]/i, '').trim();
+
+                // Split options by tokens like A. B. C. D.
+                const parts = content.split(/(?=[A-D]\.)/);
+                const qText = parts[0].replace(/^[0-9]+\.\s*/,'').trim();
+                const opts = [];
+                for (let i = 1; i < parts.length; i++) {
+                    opts.push(parts[i].replace(/^[A-D]\.?\s*/i, '').trim());
+                }
+
+                // Fallback: if not detected, try splitting by ' A. ' pattern
+                if (opts.length < 2) {
+                    const alt = block.split(/\s+[A-D]\.\s+/).slice(1);
+                    if (alt.length >= 2) {
+                        opts.length = 0;
+                        alt.forEach(a => opts.push(a.trim()));
+                    }
+                }
+
+                if (qText && opts.length >= 2 && keyLetter) {
+                    const idx = ['A','B','C','D'].indexOf(keyLetter);
+                    db.questions.push({ text: qText, options: opts.slice(0,4), mapel, rombel, correct: idx >= 0 ? idx : 0 });
+                    added++;
+                } else {
+                    failed++;
+                }
+            });
+
+            save();
+            renderAdminQuestions();
+            closeModals();
+            alert(`Import selesai. Ditambahkan: ${added}. Gagal: ${failed}`);
+        }
+
+        function importDatabase(event) {
+            const file = event?.target?.files?.[0];
+            if (!file) return;
+            if (!confirm('Restore database akan menggantikan data saat ini. Lanjutkan?')) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed && typeof parsed === 'object') {
+                        db = parsed;
+                        save();
+                        alert('Restore berhasil. Halaman akan dimuat ulang.');
+                        location.reload();
+                    } else {
+                        alert('Format file tidak valid.');
+                    }
+                } catch (err) {
+                    alert('Gagal membaca file: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            // reset input value so same file can be selected again
+            event.target.value = '';
+        }
+
+        // --- VIRTUAL WIFI HOTSPOT FUNCTIONS ---
+        window.hotspotState = 'unknown';
+
+        function updateHotspotUI(state) {
+            const statusEl = document.getElementById('hotspot-status');
+            window.hotspotState = state || 'unknown';
+            if (statusEl) statusEl.innerText = 'Status: ' + window.hotspotState;
+        }
+
+        async function fetchHotspotStatus() {
+            try {
+                const res = await fetch('/api/hotspot/status');
+                if (res.ok) {
+                    const data = await res.json();
+                    updateHotspotUI(data.status || 'unknown');
+                } else {
+                    updateHotspotUI('error');
+                }
+            } catch (err) {
+                updateHotspotUI(err.message || 'error');
+            }
+        }
+
+        async function startHotspot() {
+            try {
+                const res = await fetch('/api/hotspot/start', { method: 'POST' });
+                if (res.ok) {
+                    alert('Hotspot sedang diaktifkan');
+                } else {
+                    // try parse JSON error message
+                    let msg = res.statusText;
+                    try {
+                        const data = await res.json();
+                        if (data && data.error) msg = data.error;
+                    } catch (e) {
+                        // fallback to text
+                        const txt = await res.text().catch(() => '');
+                        if (txt) msg = txt;
+                    }
+                    alert('Gagal mengaktifkan hotspot: ' + msg + ` (HTTP ${res.status})`);
+                }
+            } catch (err) {
+                alert('Error saat mengaktifkan hotspot: ' + err.message);
+            } finally {
+                fetchHotspotStatus();
+            }
+        }
+
+        async function stopHotspot() {
+            try {
+                const res = await fetch('/api/hotspot/stop', { method: 'POST' });
+                if (!res.ok) console.warn('stop error');
+            } catch (err) {
+                console.warn('Error saat menghentikan hotspot:', err);
+            } finally {
+                fetchHotspotStatus();
+            }
+        }
+
+        // --- WORD IMPORT HANDLER ---
+        function handleWordFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const arrayBuffer = e.target.result;
+                    const result = await mammoth.extractRawText({arrayBuffer});
+                    document.getElementById('import-text-area').value = result.value;
+                } catch (err) {
+                    alert('Gagal membaca file Word: ' + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- RESULTS & CONFIG ---
+
+        // --- EXPLICIT SAVE / LOAD DB (admin actions) ---
+        async function saveDatabaseToServer() {
+            try {
+                const res = await fetch('/api/db', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(db)
+                });
+                if (res.ok) {
+                    alert('Database berhasil disimpan ke server.');
+                } else {
+                    const txt = await res.text();
+                    alert('Gagal menyimpan ke server: ' + (txt || res.statusText));
+                }
+            } catch (err) {
+                alert('Error saat menyimpan ke server: ' + (err.message || err));
+            }
+        }
+
+        async function loadDatabaseFromServer() {
+            if (!confirm('Ambil database dari server akan menggantikan data saat ini. Lanjutkan?')) return;
+            try {
+                const res = await fetch('/api/db');
+                if (!res.ok) throw new Error(res.statusText || res.status);
+                const payload = await res.json();
+                if (payload && typeof payload === 'object') {
+                    db = payload;
+                    try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch (e) {}
+                    updateStats();
+                    renderAdminStudents();
+                    renderAdminQuestions();
+                    renderAdminResults();
+                    alert('Database berhasil diambil dari server.');
+                } else {
+                    throw new Error('Format data tidak valid');
+                }
+            } catch (err) {
+                alert('Gagal mengambil database: ' + (err.message || err));
+            }
+        }
+
+        function updateAdminAccount() {
+            const admin = db.students.find(x => x.role === 'admin');
+            if (!admin) return alert('Administrator tidak ditemukan.');
+            const oldPass = document.getElementById('set-admin-old-pass').value;
+            const newId = document.getElementById('set-admin-id').value.trim();
+            const newPass = document.getElementById('set-admin-new-pass').value;
+
+            if (oldPass !== admin.password) return alert('Password saat ini salah.');
+            if (newId) admin.id = newId;
+            if (newPass) admin.password = newPass;
+            save();
+            alert('Perubahan tersimpan.');
+            showAdminSection('settings');
+        }
+
+
+        // --- RESULTS & CONFIG ---
+        function renderAdminResults() {
+            const tbody = document.getElementById('results-table-body');
+            const from = document.getElementById('results-date-from')?.value;
+            const to = document.getElementById('results-date-to')?.value;
+            const fromTs = from ? new Date(from + 'T00:00:00').getTime() : null;
+            const toTs = to ? new Date(to + 'T23:59:59').getTime() : null;
+
+            const rows = db.results
+                .map((r, i) => ({ r, i }))
+                .filter(({ r }) => {
+                    const rombelFilter = document.getElementById('results-filter-rombel')?.value;
+                    const mapelFilter = document.getElementById('results-filter-mapel')?.value;
+
+                    if (rombelFilter && rombelFilter !== 'ALL' && r.rombel !== rombelFilter) return false;
+                    if (mapelFilter && mapelFilter !== 'ALL' && r.mapel !== mapelFilter) return false;
+
+                    if (!fromTs && !toTs) return true;
+                    if (!r.date) return false; // skip undated entries when filtering by date
+                    const t = new Date(r.date).getTime();
+                    if (fromTs && t < fromTs) return false;
+                    if (toTs && t > toTs) return false;
+                    return true;
+                })
+                .map(({ r, i }) => `
+                <tr>
+                    <td class="px-6 py-4 font-bold">${r.studentName}</td>
+                    <td class="px-6 py-4 text-xs">${r.rombel}</td>
+                    <td class="px-6 py-4 text-xs font-medium">${r.mapel}</td>
+                    <td class="px-6 py-4 text-xs">${r.date ? new Date(r.date).toLocaleString() : '-'}</td>
+                    <td class="px-6 py-4 text-center font-black text-sky-600">${r.score}</td>
+                    <td class="px-6 py-4 text-center"><button onclick="deleteResult(${i})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button></td>
+                </tr>
+            `).join('');
+
+            tbody.innerHTML = rows;
+        }
+
+        function clearResultsFilter() {
+            const f = document.getElementById('results-date-from');
+            const t = document.getElementById('results-date-to');
+            if (f) f.value = '';
+            if (t) t.value = '';
+            renderAdminResults();
+        }
+
+        function deleteResult(idx) {
+            if (!confirm('Hapus hasil ujian ini?')) return;
+            db.results.splice(idx, 1);
+            save();
+            renderAdminResults();
+        }
+
+        function exportResultsToExcel() {
+            const from = document.getElementById('results-date-from')?.value;
+            const to = document.getElementById('results-date-to')?.value;
+            const fromTs = from ? new Date(from + 'T00:00:00').getTime() : null;
+            const toTs = to ? new Date(to + 'T23:59:59').getTime() : null;
+
+            // Filter the results using the same logic as renderAdminResults
+            const filteredResults = db.results.filter(r => {
+                const rombelFilter = document.getElementById('results-filter-rombel')?.value;
+                const mapelFilter = document.getElementById('results-filter-mapel')?.value;
+
+                if (rombelFilter && rombelFilter !== 'ALL' && r.rombel !== rombelFilter) return false;
+                if (mapelFilter && mapelFilter !== 'ALL' && r.mapel !== mapelFilter) return false;
+
+                if (!fromTs && !toTs) return true;
+                if (!r.date) return false;
+                const t = new Date(r.date).getTime();
+                if (fromTs && t < fromTs) return false;
+                if (toTs && t > toTs) return false;
+                return true;
+            });
+
+            // Prepare data for Excel
+            const excelData = filteredResults.map(r => ({
+                'Nama Siswa': r.studentName,
+                'Rombel': r.rombel,
+                'Mata Pelajaran': r.mapel,
+                'Tanggal': r.date ? new Date(r.date).toLocaleString() : '-',
+                'Skor Akhir': r.score
+            }));
+
+            // Create workbook and worksheet
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Hasil Ujian');
+
+            // Set column widths
+            worksheet['!cols'] = [
+                { wch: 25 },  // Nama Siswa
+                { wch: 12 },  // Rombel
+                { wch: 20 },  // Mata Pelajaran
+                { wch: 18 },  // Tanggal
+                { wch: 12 }   // Skor Akhir
+            ];
+
+            // Generate filename with timestamp
+            const timestamp = new Date().toISOString().split('T')[0];
+            const filename = `Hasil_Ujian_${timestamp}.xlsx`;
+
+            // Write the file
+            XLSX.writeFile(workbook, filename);
+        }
+
+        function openConfigModal(type) {
+            currentConfigType = type;
+            document.getElementById('config-title').innerText = "Tambah " + (type === 'mapel' ? 'Mata Pelajaran' : 'Rombel');
+            document.getElementById('config-modal').classList.replace('hidden', 'flex');
+        }
+
+        function saveConfig() {
+            const val = document.getElementById('config-input').value.trim();
+            if (!val) return;
+            if (currentConfigType === 'mapel') db.subjects.push(val);
+            else db.rombels.push(val);
+            save();
+            closeModals();
+            showAdminSection('questions');
+        }
+
+        function exportDatabase() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+            const dl = document.createElement('a');
+            dl.setAttribute("href", dataStr);
+            dl.setAttribute("download", `BACKUP_DORKAS_${new Date().toISOString().slice(0,10)}.json`);
+            dl.click();
+        }
+
+        // --- STUDENT EXAM LOGIC ---
+        function renderStudentExamList() {
+            const container = document.getElementById('student-exam-list');
+            const myRombel = currentSiswa.rombel;
+            const availableMapels = [...new Set(db.questions.filter(q => q.rombel === myRombel).map(q => q.mapel))];
+
+            if (availableMapels.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-20"><p class="text-slate-400 font-bold">Belum ada ujian tersedia untuk rombel Anda.</p></div>`;
+                return;
+            }
+
+            container.innerHTML = availableMapels.map(m => {
+                const alreadyDone = db.results.find(r => r.studentId === currentSiswa.id && r.mapel === m);
+                return `
+                    <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm transition-all hover:shadow-xl">
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="w-12 h-12 bg-sky-100 text-sky-600 rounded-2xl flex items-center justify-center text-xl"><i class="fas fa-file-alt"></i></div>
+                            ${alreadyDone ? '<span class="px-3 py-1 bg-emerald-100 text-emerald-600 rounded-full text-[10px] font-black uppercase">Selesai</span>' : '<span class="px-3 py-1 bg-amber-100 text-amber-600 rounded-full text-[10px] font-black uppercase">Tersedia</span>'}
+                        </div>
+                        <h3 class="text-lg font-black text-slate-800 mb-1">${m}</h3>
+                        <p class="text-slate-400 text-xs mb-6 font-medium">Ujian Akhir Semester - SMP Dorkas</p>
+                        ${alreadyDone ? 
+                            `<div class="flex items-center gap-2 text-sky-600 font-black">Skor: ${alreadyDone.score}</div>` : 
+                            `<button onclick="startExam('${m}')" class="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl hover:bg-sky-600 transition-all">MULAI UJIAN</button>`
+                        }
+                    </div>
+                `;
+            }).join('');
+        }
+
+        let examData = { mapel: "", questions: [], currentIdx: 0, answers: [], timer: null };
+
+        function startExam(mapel) {
+            const qs = db.questions.filter(q => q.mapel === mapel && q.rombel === currentSiswa.rombel);
+            examData = { mapel, questions: qs, currentIdx: 0, answers: new Array(qs.length).fill(null) };
+            
+            document.getElementById('student-exam-list').classList.add('hidden');
+            document.getElementById('exam-screen').classList.remove('hidden');
+            document.getElementById('exam-meta').innerText = `${mapel} | ${currentSiswa.rombel}`;
+            
+            showQuestion(0);
+            startTimer(30 * 60); // 30 Menit
+        }
+
+        function showQuestion(idx) {
+            examData.currentIdx = idx;
+            const q = examData.questions[idx];
+            document.getElementById('curr-q-num').innerText = idx + 1;
+            document.getElementById('exam-q-text').innerText = q.text;
+            
+            // show image if available
+            const imgEl = document.getElementById('exam-image');
+            if (q.image) {
+                imgEl.src = q.image;
+                imgEl.classList.remove('hidden');
+            } else {
+                imgEl.classList.add('hidden');
+            }
+            
+            document.getElementById('exam-options').innerHTML = q.options.map((opt, i) => `
+                <button onclick="setAnswer(${i})" class="w-full p-5 text-left rounded-2xl border-2 transition-all ${examData.answers[idx] === i ? 'border-sky-600 bg-sky-50 text-sky-700 font-bold' : 'border-slate-50 hover:bg-slate-50 text-slate-600'}">
+                    <span class="inline-block w-8 font-black">${['A','B','C','D'][i]}.</span> ${opt}
+                </button>
+            `).join('');
+
+            document.getElementById('btn-prev').disabled = idx === 0;
+            document.getElementById('btn-next').classList.toggle('hidden', idx === examData.questions.length - 1);
+            document.getElementById('btn-finish').classList.toggle('hidden', idx !== examData.questions.length - 1);
+        }
+
+        function setAnswer(i) { examData.answers[examData.currentIdx] = i; showQuestion(examData.currentIdx); }
+        function navQ(dir) { showQuestion(examData.currentIdx + dir); }
+
+        function startTimer(sec) {
+            clearInterval(examData.timer);
+            examData.timer = setInterval(() => {
+                sec--;
+                const m = Math.floor(sec / 60);
+                const s = sec % 60;
+                document.getElementById('timer').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                if (sec <= 0) finishExam();
+            }, 1000);
+        }
+
+        function finishExam() {
+            clearInterval(examData.timer);
+            let correctCount = 0;
+            examData.questions.forEach((q, i) => { if(examData.answers[i] === q.correct) correctCount++; });
+            const score = Math.round((correctCount / examData.questions.length) * 100);
+
+            db.results.push({
+                studentId: currentSiswa.id,
+                studentName: currentSiswa.name,
+                rombel: currentSiswa.rombel,
+                mapel: examData.mapel,
+                score: score,
+                date: new Date().toISOString()
+            });
+            save();
+
+            document.getElementById('exam-screen').classList.add('hidden');
+            document.getElementById('score-result').classList.remove('hidden');
+            document.getElementById('final-score-val').innerText = score;
+        }
+
+        // --- INIT ---
+        window.addEventListener('load', async () => {
+            await init();
+            console.log('App initialized, db has', db.students.length, 'students');
+        });
+    </script>
+</body>
+</html>

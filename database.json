@@ -1,0 +1,45 @@
+{
+  "subjects": [
+    "Pendidikan Agama",
+    "Bahasa Indonesia",
+    "Matematika",
+    "IPA",
+    "IPS",
+    "Bahasa Inggris",
+    "Informatika",
+    "Seni Budaya",
+    "PJOK",
+    "Mandarin"
+  ],
+  "rombels": [
+    "VII",
+    "VIII",
+    "IX"
+  ],
+  "questions": [],
+  "students": [
+    {
+      "id": "ADM",
+      "password": "admin321",
+      "name": "Administrator",
+      "role": "admin"
+    },
+    {
+      "id": "DRKS-6481",
+      "password": "escrido",
+      "name": "opo",
+      "rombel": "VII",
+      "role": "student"
+    }
+  ],
+  "results": [
+    {
+      "studentId": "DRKS-6481",
+      "studentName": "opo",
+      "rombel": "VII",
+      "mapel": "Pendidikan Agama",
+      "score": 100,
+      "date": "2026-03-03T11:11:27.302Z"
+    }
+  ]
+}
