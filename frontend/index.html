@@ -6,7 +6,7 @@
     <title>Sistem Ujian Online - SMP KRISTEN DORKAS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -25,7 +25,7 @@
         <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
             <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 border border-slate-100 text-center">
                 <div class="mb-6">
-                    <img src="logo.png" alt="Logo SMP KRISTEN DORKAS" class="w-20 h-20 mx-auto logo-glow object-contain" onerror="this.src='logo.png'">
+                    <img src="/logo.png" alt="Logo SMP KRISTEN DORKAS" class="w-20 h-20 mx-auto logo-glow object-contain" onerror="this.onerror=null; this.src='/logo.png';">
                 </div>
                 <h1 class="text-2xl font-black text-slate-800 tracking-tight uppercase">EXAM SMP KRISTEN DORKAS</h1>
                 <p class="text-sky-600 text-[10px] font-bold uppercase tracking-[0.2em] mt-1 mb-8 italic">Cerdas - Beriman - Berbudi Pekerti</p>
@@ -62,7 +62,7 @@
         <div id="admin-dashboard" class="hidden min-h-screen flex bg-slate-50">
             <aside class="w-64 bg-slate-900 text-white flex flex-col hidden lg:flex">
                 <div class="p-8 flex flex-col items-center gap-3 text-center">
-                    <img src="logo.png" class="w-12 h-12 object-contain">
+                    <img src="/logo.png" class="w-12 h-12 object-contain" onerror="this.onerror=null; this.src='/logo.png';">
                     <h2 class="text-xs font-black text-sky-400 italic">DORKAS ADMIN</h2>
                 </div>
                 <nav class="flex-1 px-4 space-y-2">
@@ -227,7 +227,7 @@
         <div id="student-dashboard" class="hidden min-h-screen bg-slate-50">
             <nav class="bg-white px-8 py-4 border-b border-slate-50 flex justify-between items-center sticky top-0 z-20">
                 <div class="flex items-center gap-4">
-                    <img src="logo.png" class="w-10 h-10 object-contain">
+                    <img src="/logo.png" class="w-10 h-10 object-contain" onerror="this.onerror=null; this.src='/logo.png';">
                     <div>
                         <h2 class="text-sm font-black text-sky-600">SMP KRISTEN DORKAS</h2>
                         <p id="st-info-label" class="text-[9px] font-bold text-slate-400 uppercase tracking-widest"></p>
@@ -372,7 +372,18 @@
         let currentSiswa = null;
         let activeCorrect = 0;
         let currentConfigType = "";
-        
+
+        let serverSaveEnabled = true;
+
+        function disableServerSave(reason) {
+            serverSaveEnabled = false;
+            console.warn('Server save disabled:', reason);
+        }
+
+        function isStaticHost() {
+            return window.location.hostname.endsWith('github.io') || window.location.hostname.includes('vercel.app');
+        }
+
         // --- CORE FUNCTIONS ---
         async function init() {
             // Try to load from server first
@@ -413,6 +424,15 @@
             // Save locally (best-effort) and attempt server save
             try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch (e) {}
 
+            if (!serverSaveEnabled || isStaticHost()) {
+                if (isStaticHost()) {
+                    disableServerSave('static host (github pages / vercel)');
+                }
+                console.log('Simpan lokal saja (server API tidak tersedia).');
+                updateStats();
+                return;
+            }
+
             fetch('/api/db', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -423,12 +443,18 @@
                     try { bodyText = (await r.text()).trim(); } catch (e) { bodyText = ''; }
                     const detail = bodyText || r.statusText || `HTTP ${r.status}`;
                     console.warn('Gagal menyimpan ke server:', detail);
-                    alert('Gagal menyimpan ke server: ' + detail);
+                    if (r.status === 405) {
+                        disableServerSave('server replied 405 (Not Allowed)');
+                        alert('Server tidak mendukung /api/db (405). Data disimpan hanya ke localStorage.');
+                    } else {
+                        alert('Gagal menyimpan ke server: ' + detail);
+                    }
                 }
             }).catch(err => {
                 const detail = err?.message || String(err) || 'Tidak diketahui';
+                disableServerSave(detail);
                 console.warn('Error saat menyimpan ke server:', detail);
-                alert('Error saat menyimpan ke server: ' + detail);
+                alert('Error saat menyimpan ke server (fallback ke localStorage): ' + detail);
             });
 
             updateStats();
@@ -907,6 +933,15 @@
 
         // --- EXPLICIT SAVE / LOAD DB (admin actions) ---
         async function saveDatabaseToServer() {
+            if (!serverSaveEnabled || isStaticHost()) {
+                if (isStaticHost()) {
+                    disableServerSave('static host (github pages / vercel)');
+                }
+                console.info('Static host: server save disabled; using localStorage only.');
+                save();
+                return;
+            }
+
             try {
                 const res = await fetch('/api/db', {
                     method: 'POST',
@@ -918,11 +953,19 @@
                 } else {
                     const txt = await res.text();
                     const detail = (txt || '').trim() || res.statusText || `HTTP ${res.status}`;
-                    alert('Gagal menyimpan ke server: ' + detail);
+                    if (res.status === 405) {
+                        disableServerSave('405 Not Allowed');
+                        alert('Server tidak mendukung /api/db (405). Data akan disimpan ke localStorage saja.');
+                        save();
+                    } else {
+                        alert('Gagal menyimpan ke server: ' + detail);
+                    }
                 }
             } catch (err) {
                 const detail = err?.message || String(err) || 'Tidak diketahui';
-                alert('Error saat menyimpan ke server: ' + detail);
+                disableServerSave(detail);
+                alert('Error saat menyimpan ke server (fallback ke localStorage): ' + detail);
+                save();
             }
         }
 
