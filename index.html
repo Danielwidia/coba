@@ -417,10 +417,18 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(db)
-            }).then(r => {
-                if (!r.ok) console.warn('Gagal menyimpan ke server:', r.statusText);
+            }).then(async r => {
+                if (!r.ok) {
+                    let bodyText = '';
+                    try { bodyText = (await r.text()).trim(); } catch (e) { bodyText = ''; }
+                    const detail = bodyText || r.statusText || `HTTP ${r.status}`;
+                    console.warn('Gagal menyimpan ke server:', detail);
+                    alert('Gagal menyimpan ke server: ' + detail);
+                }
             }).catch(err => {
-                console.warn('Error saat menyimpan ke server:', err.message || err);
+                const detail = err?.message || String(err) || 'Tidak diketahui';
+                console.warn('Error saat menyimpan ke server:', detail);
+                alert('Error saat menyimpan ke server: ' + detail);
             });
 
             updateStats();
@@ -909,10 +917,12 @@
                     alert('Database berhasil disimpan ke server.');
                 } else {
                     const txt = await res.text();
-                    alert('Gagal menyimpan ke server: ' + (txt || res.statusText));
+                    const detail = (txt || '').trim() || res.statusText || `HTTP ${res.status}`;
+                    alert('Gagal menyimpan ke server: ' + detail);
                 }
             } catch (err) {
-                alert('Error saat menyimpan ke server: ' + (err.message || err));
+                const detail = err?.message || String(err) || 'Tidak diketahui';
+                alert('Error saat menyimpan ke server: ' + detail);
             }
         }
 
