@@ -59,8 +59,22 @@ app.get('/', (req, res) => {
 
 // API to persist database to a file (simple server-side storage)
 app.use(express.json({ limit: '5mb' }));
-// Simpan database di folder frontend yang sama dengan index.html
-const DATA_FILE = path.join(frontendPath, 'database.json');
+
+// In serverless (Vercel/AWS Lambda) public folder is read-only.
+// Use /tmp for writable storage in that environment.
+const SERVERLESS_DATA_FILE = process.env.DATA_FILE || (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME ? path.join('/tmp', 'database.json') : null);
+const DATA_FILE = SERVERLESS_DATA_FILE || path.join(frontendPath, 'database.json');
+
+function ensureDataDir(filePath) {
+    try {
+        const dir = path.dirname(filePath);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+    } catch (err) {
+        console.warn('Could not create data directory:', err.message);
+    }
+}
 
 function readDB() {
     try {
@@ -71,7 +85,14 @@ function readDB() {
 }
 
 function writeDB(obj) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(obj, null, 2), 'utf8');
+    try {
+        ensureDataDir(DATA_FILE);
+        fs.writeFileSync(DATA_FILE, JSON.stringify(obj, null, 2), 'utf8');
+        return true;
+    } catch (err) {
+        console.error('writeDB error:', err);
+        return false;
+    }
 }
 
 app.get('/api/db', (req, res) => {
@@ -194,6 +215,7 @@ const HOST = process.env.HOST || '0.0.0.0';
 
 // Ensure data file exists (create minimal file if missing)
 if (!fs.existsSync(DATA_FILE)) {
+    ensureDataDir(DATA_FILE); // create /tmp or frontend path if possible
     const defaultDb = {
         subjects: ["Pendidikan Agama", "Bahasa Indonesia", "Matematika", "IPA", "IPS", "Bahasa Inggris", "Seni Budaya", "Informatika", "PJOK", "Bahasa Jawa", "Mandarin"],
         rombels: ["VII", "VIII", "IX"],
