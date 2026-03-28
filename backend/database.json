@@ -1,0 +1,90 @@
+{
+  "subjects": [
+    "Pendidikan Agama",
+    "Bahasa Indonesia",
+    "Matematika",
+    "IPA",
+    "IPS",
+    "Bahasa Inggris"
+    "Seni Budaya"
+    "Informatika"
+    "PJOK"
+  ],
+  "rombels": [
+    "VII-A",
+    "VII-B",
+    "VIII-A",
+    "VIII-B",
+    "IX-A",
+    "IX-B"
+  ],
+  "questions": [
+    {
+      "text": "Hasil dari 7 + 5 adalah...",
+      "options": [
+        "12",
+        "11",
+        "13",
+        "14"
+      ],
+      "mapel": "Matematika",
+      "rombel": "VII-A",
+      "correct": 0
+    },
+    {
+      "text": "Hasil dari 9 + 6 adalah...",
+      "options": [
+        "14",
+        "15",
+        "16",
+        "13"
+      ],
+      "mapel": "Matematika",
+      "rombel": "VII-A",
+      "correct": 1
+    },
+    {
+      "text": "Hasil dari 8 + 4 adalah...",
+      "options": [
+        "11",
+        "13",
+        "12",
+        "14\nE. -\n\n4. Hasil dari 6 + 7 adalah..."
+      ],
+      "mapel": "Matematika",
+      "rombel": "VII-A",
+      "correct": 2
+    }
+  ],
+  "students": [
+    {
+      "id": "ADM",
+      "password": "admin321",
+      "name": "Administrator",
+      "role": "admin"
+    },
+    {
+      "id": "DRKS-2240",
+      "password": "escrido",
+      "name": "Danang",
+      "rombel": "VII-A",
+      "role": "student"
+    }
+  ],
+  "results": [
+    {
+      "studentId": "ST-8382",
+      "studentName": "hghgh",
+      "rombel": "VII-A",
+      "mapel": "Matematika",
+      "score": 100
+    },
+    {
+      "studentId": "ST-2458",
+      "studentName": "Jojo",
+      "rombel": "VII-A",
+      "mapel": "Matematika",
+      "score": 100
+    }
+  ]
+}
