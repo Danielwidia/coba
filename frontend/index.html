@@ -149,6 +149,7 @@
                             <button onclick="saveDatabaseToServer()" class="px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold text-sm shadow-lg hover:bg-indigo-700">Simpan DB</button>
                             <button onclick="loadDatabaseFromServer()" class="px-6 py-3 bg-amber-500 text-white rounded-2xl font-bold text-sm shadow-lg hover:bg-amber-600">Ambil DB</button>
                         </div>
+                        <p id="data-file-path" class="text-xs text-slate-400 italic mt-2">Lokasi basis data saat ini: frontend/database.json</p>
                     </div>
                     <div class="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
                         <table class="w-full text-left text-sm">
@@ -936,6 +937,16 @@
                 alert('Gagal mengambil database: ' + (err.message || err));
             }
         }
+
+        function setDatabasePathInfo() {
+            const info = document.getElementById('data-file-path');
+            if (info) {
+                info.innerText = 'Lokasi basis data saat ini: frontend/database.json';
+            }
+        }
+
+        // call at startup
+        setDatabasePathInfo();
 
         function updateAdminAccount() {
             const admin = db.students.find(x => x.role === 'admin');
