@@ -149,7 +149,6 @@
                             <button onclick="saveDatabaseToServer()" class="px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold text-sm shadow-lg hover:bg-indigo-700">Simpan DB</button>
                             <button onclick="loadDatabaseFromServer()" class="px-6 py-3 bg-amber-500 text-white rounded-2xl font-bold text-sm shadow-lg hover:bg-amber-600">Ambil DB</button>
                         </div>
-                        <p id="data-file-path" class="text-xs text-slate-400 italic mt-2">Lokasi basis data saat ini: frontend/database.json</p>
                     </div>
                     <div class="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
                         <table class="w-full text-left text-sm">
@@ -372,6 +371,17 @@
         let currentSiswa = null;
         let activeCorrect = 0;
         let currentConfigType = "";
+
+        let serverSaveEnabled = true;
+
+        function disableServerSave(reason) {
+            serverSaveEnabled = false;
+            console.warn('Server save disabled:', reason);
+        }
+
+        function isGithubPages() {
+            return window.location.hostname.endsWith('github.io');
+        }
         
         // --- CORE FUNCTIONS ---
         async function init() {
@@ -413,6 +423,15 @@
             // Save locally (best-effort) and attempt server save
             try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch (e) {}
 
+            if (!serverSaveEnabled || isGithubPages()) {
+                if (isGithubPages()) {
+                    disableServerSave('github pages static host');
+                }
+                console.log('Simpan lokal saja (server API tidak tersedia).');
+                updateStats();
+                return;
+            }
+
             fetch('/api/db', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -423,12 +442,18 @@
                     try { bodyText = (await r.text()).trim(); } catch (e) { bodyText = ''; }
                     const detail = bodyText || r.statusText || `HTTP ${r.status}`;
                     console.warn('Gagal menyimpan ke server:', detail);
-                    alert('Gagal menyimpan ke server: ' + detail);
+                    if (r.status === 405) {
+                        disableServerSave('server replied 405 (Not Allowed)');
+                        alert('Server tidak mendukung /api/db (405). Data disimpan hanya ke localStorage.');
+                    } else {
+                        alert('Gagal menyimpan ke server: ' + detail);
+                    }
                 }
             }).catch(err => {
                 const detail = err?.message || String(err) || 'Tidak diketahui';
+                disableServerSave(detail);
                 console.warn('Error saat menyimpan ke server:', detail);
-                alert('Error saat menyimpan ke server: ' + detail);
+                alert('Error saat menyimpan ke server (fallback ke localStorage): ' + detail);
             });
 
             updateStats();
@@ -907,6 +932,15 @@
 
         // --- EXPLICIT SAVE / LOAD DB (admin actions) ---
         async function saveDatabaseToServer() {
+            if (!serverSaveEnabled || isGithubPages()) {
+                if (isGithubPages()) {
+                    disableServerSave('github pages static host');
+                }
+                alert('Tidak bisa menyimpan ke server pada host statis. Data disimpan lokal saja.');
+                save();
+                return;
+            }
+
             try {
                 const res = await fetch('/api/db', {
                     method: 'POST',
@@ -918,11 +952,19 @@
                 } else {
                     const txt = await res.text();
                     const detail = (txt || '').trim() || res.statusText || `HTTP ${res.status}`;
-                    alert('Gagal menyimpan ke server: ' + detail);
+                    if (res.status === 405) {
+                        disableServerSave('405 Not Allowed');
+                        alert('Server tidak mendukung /api/db (405). Database akan disimpan ke localStorage saja.');
+                        save();
+                    } else {
+                        alert('Gagal menyimpan ke server: ' + detail);
+                    }
                 }
             } catch (err) {
                 const detail = err?.message || String(err) || 'Tidak diketahui';
-                alert('Error saat menyimpan ke server: ' + detail);
+                disableServerSave(detail);
+                alert('Error saat menyimpan ke server (fallback ke localStorage): ' + detail);
+                save();
             }
         }
 
@@ -947,16 +989,6 @@
                 alert('Gagal mengambil database: ' + (err.message || err));
             }
         }
-
-        function setDatabasePathInfo() {
-            const info = document.getElementById('data-file-path');
-            if (info) {
-                info.innerText = 'Lokasi basis data saat ini: frontend/database.json';
-            }
-        }
-
-        // call at startup
-        setDatabasePathInfo();
 
         function updateAdminAccount() {
             const admin = db.students.find(x => x.role === 'admin');
