@@ -937,7 +937,7 @@
                 if (isStaticHost()) {
                     disableServerSave('static host (github pages / vercel)');
                 }
-                alert('Tidak bisa menyimpan ke server pada host statis. Data disimpan lokal saja.');
+                console.info('Static host: server save disabled; using localStorage only.');
                 save();
                 return;
             }
