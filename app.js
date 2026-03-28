@@ -11,6 +11,14 @@ const questions = [
     }
 ];
 
+const DB_FILE = 'database.json';
+
+function showDatabaseFileInfo() {
+    console.log(`Database akan disimpan di: ${DB_FILE}`);
+    const el = document.getElementById('data-file-path');
+    if (el) el.innerText = `Lokasi basis data saat ini: ${DB_FILE}`;
+}
+
 let currentIndex = 0;
 
 function renderQuestion() {
@@ -48,4 +56,5 @@ document.getElementById('next-btn').onclick = () => {
     }
 };
 
+showDatabaseFileInfo();
 renderQuestion();
